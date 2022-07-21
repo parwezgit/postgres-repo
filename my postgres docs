@@ -1,0 +1,1330 @@
+Dear Applicant. Your login ID is 6295203060, Password is KENDRIYA V. Please save login ID & Password for future. You will be redirected to next step
+
+
+Absayar
+
+2489507067
+Ammijaan1#
+
+966634
+
+P@ssw0rd2020
+alibaba
+
+
+Dear Arya ,
+It's still showing 77% cleared .Meanwhile , just now I received one mail from asset recovery that my non asset is pending with Niloy Roy(474588)
+Attaching both screenshots for your reference .
+
+
+
+####################### Install /Download new postgres 13############################################################33
+
+sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+sudo yum install -y postgresql13-server
+sudo /usr/pgsql-13/bin/postgresql-13-setup initdb
+sudo systemctl enable postgresql-13
+sudo systemctl start postgresql-13
+
+
+
+####################pg_backRest##############3
+
+[global]
+repo1-path=/var/oled/pgbackrest/  ( in this dir the data and archivelog backup will be stored)
+repo1-retention-full=2
+
+[olap]
+pg1-path=/var/lib/pgsql/14/data
+pg1-port=5432
+
+
+make sure to cnage the below paramete .conf file
+
+postgres=# show wal_level;
+ wal_level
+-----------
+ replica
+(1 row)
+
+
+[postgres@parweztestinstance ~]$ grep -i listen /var/lib/pgsql/14/data/postgresql.conf
+listen_addresses = '*'          # what IP address(es) to listen on;
+
+
+
+[postgres@parweztestinstance ~]$ grep -i archive /var/lib/pgsql/14/data/postgresql.conf
+archive_mode = on       # enables archiving; off, on, or always
+
+#archive_command = ''           # command to use to archive a logfile segment
+                                # placeholders: %p = path of file to archive
+                                # e.g. 'test ! -f /mnt/server/archivedir/%f && cp %p /mnt/server/archivedir/%f'
+archive_command = 'pgbackrest --stanza=olap --pg1-path=/var/lib/pgsql/14/data  archive-push %p'
+
+
+
+[postgres@parweztestinstance data]$ pgbackrest stanza-create --stanza=olap --log-level-console=info --pg1-path=/var/lib/pgsql/14/data
+2022-07-17 20:47:37.816 P00   INFO: stanza-create command begin 2.39: --exec-id=643344-3dd9a261 --log-level-console=info --pg1-path=/var/lib/pgsql/14/data --repo1-path=/var/lib/pgbackrest --stanza=olap
+2022-07-17 20:47:38.424 P00   INFO: stanza-create for stanza 'olap' on repo1
+2022-07-17 20:47:38.436 P00   INFO: stanza-create command end: completed successfully (622ms)
+
+
+
+
+
+
+
+
+full backup 
+
+-bash-4.2$ pgbackrest --stanza=openpgsql --type=full backup --log-level-console=info
+
+2021-04-16 20:29:20.613 P00   INFO: backup command begin 2.33: --exec-id=10288-2adc9ff7 --log-level-console=info --pg1-path=/var/lib/pgsql/13/data --pg1-port=5432 --repo1-path=/var/lib/pgbackrest --repo1-retention-full=2 --stanza=openpgsql --type=full
+2021-04-16 20:29:21.319 P00   INFO: execute non-exclusive pg_start_backup(): backup begins after the next regular checkpoint completes
+2021-04-16 20:29:22.020 P00   INFO: backup start archive = 000000020000000000000007, lsn = 0/7000028
+2021-04-16 20:29:23.252 P01   INFO: backup file /var/lib/pgsql/13/data/base/16394/1255 (648KB, 1%) checksum 4752f25689f9f34d4ae9962093bb210167e3fc0c
+2021-04-16 20:29:23.297 P01   INFO: backup file /var/lib/pgsql/13/data/base/16384/1255 (648KB, 3%) checksum aea88207dd3c20ccddf8effec0ed88ffcb106fa7
+2021-04-16 20:29:23.325 P01   INFO: backup file /var/lib/pgsql/13/data/base/14175/1255 (648KB, 4%) checksum 4752f25689f9f34d4ae9962093bb210167e3fc0c
+
+-bash-4.2$ pgbackrest info
+stanza: openpgsql
+    status: ok
+    cipher: none
+
+    db (current)
+        wal archive min/max (13): 000000020000000000000007/000000020000000000000009
+
+        full backup: 20210416-202921F
+            timestamp start/stop: 2021-04-16 20:29:21 / 2021-04-16 20:29:31
+            wal start/stop: 000000020000000000000007 / 000000020000000000000007
+            database size: 39.6MB, database backup size: 39.6MB
+            repo1: backup set size: 3.9MB, backup size: 3.9MB
+
+
+incr backup 
+
+
+-bash-4.2$ pgbackrest --stanza=openpgsql --type=incr --log-level-console=info backup
+2021-04-16 20:31:03.204 P00   INFO: backup command begin 2.33: --exec-id=10314-7539eda6 --log-level-console=info --pg1-path=/var/lib/pgsql/13/data --pg1-port=5432 --repo1-path=/var/lib/pgbackrest --repo1-retention-full=2 --stanza=openpgsql --type=incr
+2021-04-16 20:31:03.928 P00   INFO: last backup label = 20210416-203020F, version = 2.33
+2021-04-16 20:31:03.928 P00   INFO: execute non-exclusive pg_start_backup(): backup begins after the next regular checkpoint completes
+2021-04-16 20:31:04.675 P00   INFO: backup start archive = 00000002000000000000000B, lsn = 0/B000028
+
+
+
+
+
+
+
+pgbackrest --stanza=openpgsql --db-include=diff_backup --type=immediate --target-action=promote restore --log-level-console=detail
+
+
+-bash-4.2$ pgbackrest info
+stanza: openpgsql
+    status: ok
+    cipher: none
+
+    db (current)
+        wal archive min/max (13): 000000010000000000000001/000000010000000000000005
+
+        full backup: 20210416-200740F
+            timestamp start/stop: 2021-04-16 20:07:40 / 2021-04-16 20:07:50
+            wal start/stop: 000000010000000000000003 / 000000010000000000000003
+            database size: 31.7MB, database backup size: 31.7MB  ( see full backup sizes )
+            repo1: backup set size: 3.9MB, backup size: 3.9MB
+
+        incr backup: 20210416-200740F_20210416-201104I
+            timestamp start/stop: 2021-04-16 20:11:04 / 2021-04-16 20:11:08
+            wal start/stop: 000000010000000000000005 / 000000010000000000000005
+            database size: 39.6MB, database backup size: 7.9MB              ( see incr backup sizes)
+            repo1: backup set size: 4.8MB, backup size: 994.5KB
+            backup reference list: 20210416-200740F
+
+
+
+
+
+-bash-4.2$ cd /var/lib/pgbackrest
+-bash-4.2$
+-bash-4.2$ ls -ltr
+total 0
+drwxr-x---. 3 postgres postgres 23 Apr 16 20:06 archive
+drwxr-x---. 3 postgres postgres 23 Apr 16 20:06 backup
+-bash-4.2$
+-bash-4.2$
+-bash-4.2$ cd backup/
+-bash-4.2$
+-bash-4.2$ ls -ltr
+total 4
+drwxr-x---. 5 postgres postgres 4096 Apr 16 20:11 openpgsql
+-bash-4.2$
+-bash-4.2$
+-bash-4.2$ cd openpgsql/
+-bash-4.2$
+-bash-4.2$ ls -ltr
+total 8
+drwxr-x---. 3 postgres postgres   72 Apr 16 20:07 20210416-200740F
+drwxr-x---. 3 postgres postgres   18 Apr 16 20:07 backup.history
+drwxr-x---. 3 postgres postgres   72 Apr 16 20:11 20210416-200740F_20210416-201104I
+lrwxrwxrwx. 1 postgres postgres   33 Apr 16 20:11 latest -> 20210416-200740F_20210416-201104I
+-rw-r-----. 1 postgres postgres 1640 Apr 16 20:11 backup.info
+-rw-r-----. 1 postgres postgres 1640 Apr 16 20:11 backup.info.copy
+
+-bash-4.2$ cd archive/
+-bash-4.2$
+-bash-4.2$ ls -ltr
+total 0
+drwxr-x---. 3 postgres postgres 63 Apr 16 20:07 openpgsql
+-bash-4.2$
+-bash-4.2$
+-bash-4.2$ cd openpgsql/
+-bash-4.2$
+-bash-4.2$
+-bash-4.2$ ls -ltr
+total 8
+-rw-r-----. 1 postgres postgres 253 Apr 16 20:06 archive.info
+-rw-r-----. 1 postgres postgres 253 Apr 16 20:06 archive.info.copy
+drwxr-x---. 3 postgres postgres  54 Apr 16 20:19 13-1
+
+
+
+
+
+
+
+restore 
+rm -rf data 
+-bash-4.2$ pwd
+/var/lib/pgsql/13
+-bash-4.2$
+-bash-4.2$
+-bash-4.2$
+-bash-4.2$ mkdir -p data
+
+
+delete the data dir 
+
+-bash-4.2$ pgbackrest --stanza=openpgsql --db-include=diff_backup --type=immediate --target-action=promote restore --log-level-console=detail
+
+
+2021-04-16 20:16:10.804 P00   INFO: restore command begin 2.33: --db-include=diff_backup --exec-id=10029-b532f5fb --log-level-console=detail --pg1-path=/var/lib/pgsql/13/data --repo1-path=/var/lib/pgbackrest --stanza=openpgsql --target-action=promote --type=immediate
+2021-04-16 20:16:10.830 P00   INFO: repo1: restore backup set 20210416-200740F_20210416-201104I
+2021-04-16 20:16:10.831 P00 DETAIL: databases found for selective restore (1, 14174, 14175, 16384, 16394)
+2021-04-16 20:16:10.831 P00 DETAIL: databases excluded (zeroed) from selective restore (16384)
+2021-04-16 20:16:15.734 P00 DETAIL: sync path '/var/lib/pgsql/13/data/pg_xact'
+2021-04-16 20:16:15.734 P00   INFO: restore global/pg_control (performed last to ensure aborted restores cannot be started)
+2021-04-16 20:16:15.734 P00 DETAIL: sync path '/var/lib/pgsql/13/data/global'
+2021-04-16 20:16:15.735 P00   INFO: restore command end: completed successfully (4932ms)
+
+
+
+
+
+
+
+-----------------------delete pgbackrest----------------
+
+stop server 
+
+[postgres@parweztestinstance bin]$ ./pg_ctl -D /var/lib/pgsql/14/data stop
+waiting for server to shut down.... done
+server stopped
+[postgres@parweztestinstance bin]$
+[postgres@parweztestinstance bin]$
+
+stop pgbackrest
+
+[postgres@parweztestinstance bin]$  pgbackrest --stanza=olap --log-level-console=info stop
+2022-07-19 20:21:44.250 P00   INFO: stop command begin 2.39: --exec-id=1256686-5917e8e4 --log-level-console=info --stanza=olap
+2022-07-19 20:21:44.251 P00   INFO: stop command end: completed successfully (2ms)
+
+
+[postgres@parweztestinstance bin]$ pgbackrest  info
+stanza: olap
+    status: ok
+    cipher: none
+
+    db (current)
+        wal archive min/max (14): 0000000100000000000000C1/0000000100000000000000DB
+
+        full backup: 20220717-214502F
+            timestamp start/stop: 2022-07-17 21:45:02 / 2022-07-17 21:48:22
+            wal start/stop: 0000000100000000000000CF / 0000000100000000000000CF
+            database size: 2GB, database backup size: 2GB
+            repo1: backup set size: 763.7MB, backup size: 763.7MB
+[postgres@parweztestinstance bin]$
+[postgres@parweztestinstance bin]$
+
+delete pgbackrest
+
+[postgres@parweztestinstance bin]$ pgbackrest --stanza=olap --log-level-console=info --pg1-path=/var/lib/pgsql/14/data stanza-delete
+2022-07-19 20:23:32.243 P00   INFO: stanza-delete command begin 2.39: --exec-id=1257103-768b78a3 --log-level-console=info --pg1-path=/var/lib/pgsql/14/data --repo1-path=/var/lib/pgbackrest --stanza=olap
+2022-07-19 20:23:32.486 P00   INFO: stanza-delete command end: completed successfully (243ms)
+[postgres@parweztestinstance bin]$
+[postgres@parweztestinstance bin]$
+[postgres@parweztestinstance bin]$ pgbackrest  info
+No stanzas exist in the repository.
+
+[postgres@parweztestinstance bin]$ pwd
+/usr/pgsql-14/bin
+
+[postgres@parweztestinstance bin]$ cd /var/lib/pgbackrest/
+[postgres@parweztestinstance pgbackrest]$
+[postgres@parweztestinstance pgbackrest]$ ls
+archive  backup
+[postgres@parweztestinstance pgbackrest]$ cd backup/
+[postgres@parweztestinstance backup]$
+[postgres@parweztestinstance backup]$ ls
+
+
+[postgres@parweztestinstance pgbackrest]$ cd archive/
+
+
+
+
+
+Please choose an option [1] :
+
+----------------------------------------------------------------------------
+Pre Installation Summary
+
+The following settings will be used for the installation::
+
+Installation Directory: /opt/PostgreSQL/10
+Server Installation Directory: /opt/PostgreSQL/10
+Data Directory: /opt/PostgreSQL/10/data
+Database Port: 5432
+Database Superuser: postgres
+Operating System Account: postgres
+Database Service: postgresql-10
+Command Line Tools Installation Directory: /opt/PostgreSQL/10
+pgAdmin4 Installation Directory: /opt/PostgreSQL/10/pgAdmin 4
+
+
+
+-bash-4.2$ psql
+Password:P@ssw0rd2020
+psql.bin (10.13)
+Type "help" for help.
+
+postgres=#
+postgres=# SELECT datname FROM pg_database WHERE datistemplate = false;
+ datname
+----------
+ postgres
+(1 row)
+
+postgres=#
+
+
+List all databse in postgres server 1
+
+postgres-# \l
+                                  List of databases
+   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges
+-----------+----------+----------+-------------+-------------+-----------------------
+ postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
+ template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+(3 rows)
+
+
+connect to one database 
+postgres=# \c postgres
+You are now connected to database "postgres" as user "postgres".
+
+postgres=# create table emp_sm( id integer,name varchar) ;
+CREATE TABLE
+postgres=#
+
+
+postgres=# insert into emp_sm values(1,'Parwez') ;
+INSERT 0 1
+postgres=# insert into emp_sm values(2,'Atiq') ;
+INSERT 0 1
+postgres=# insert into emp_sm values(2,'Jaffer') ;
+INSERT 0 1
+postgres=# \dt
+         List of relations
+ Schema |  Name  | Type  |  Owner
+--------+--------+-------+----------
+ public | emp_sm | table | postgres
+(1 row)
+
+postgres=# select * from emp_sm ;
+ id |  name
+----+--------
+  1 | Parwez
+  2 | Atiq
+  2 | Jaffer
+(3 rows)
+
+We cannot chnage the table ddl since we alreday added duplicate key 
+
+postgres=# alter table emp_sm add PRIMARY KEY(ID) ;
+ERROR:  could not create unique index "emp_sm_pkey"
+DETAIL:  Key (id)=(2) is duplicated.
+
+
+postgres=# update emp_sm set id=3 where name='Jaffer' ;
+UPDATE 1
+postgres=# select * from emp_sm ;
+ id |  name
+----+--------
+  1 | Parwez
+  2 | Atiq
+  3 | Jaffer
+(3 rows)
+
+postgres=# alter table emp_sm add PRIMARY KEY(ID) ;
+ALTER TABLE
+
+
+checking primary key is working or not
+
+postgres=# insert into emp_sm values(3,'New_emp') ;
+ERROR:  duplicate key value violates unique constraint "emp_sm_pkey"
+DETAIL:  Key (id)=(3) already exists.
+
+
+
+#########################################################check blocking session######################################################
+
+
+
+
+ pitr_demo=# CREATE TABLE diff_backup  AS  SELECT * FROM GENERATE_SERIES(1, 10) AS id;
+ SELECT 10
+
+pitr_demo=# checkpoint ;
+ CHECKPOINT
+
+
+
+Joining the pg_lock view to pg_stat_activity for the query and pg_class for the table names can be useful to gather 
+more context as to what is locking on your database at any point in time 
+
+select 
+    relname as relation_name, 
+    query, 
+    pg_locks.* 
+from pg_locks
+join pg_class on pg_locks.relation = pg_class.oid
+join pg_stat_activity on pg_locks.pid = pg_stat_activity.pid
+
+
+
+from session1
+
+olap=# update olap_schema.olap_table set release='1992-01-25' where title='rhtdm' ;
+UPDATE 1
+
+from session2 
+
+olap=*# update olap_schema.olap_table set release='1992-01-12' ;
+
+
+
+(( hanging))
+
+
+
+
+olap=# SELECT
+olap-#     activity.pid,
+olap-#     activity.usename,
+olap-#     activity.query,
+olap-#     blocking.pid AS blocking_id,
+olap-#     blocking.query AS blocking_query
+olap-# FROM pg_stat_activity AS activity
+olap-# JOIN pg_stat_activity AS blocking ON blocking.pid = ANY(pg_blocking_pids(activity.pid));
+  pid   | usename  |                          query                           | blocking_id |                                blocking_q
+uery
+--------+----------+----------------------------------------------------------+-------------+------------------------------------------
+------------------------------------
+ 215916 | postgres | update olap_schema.olap_table set release='1992-01-12' ; |      215382 | update olap_schema.olap_table set release
+='1992-01-25' where title='rhtdm' ;
+(1 row)
+
+
+
+SELECT
+    activity.pid,
+    activity.usename,
+    activity.query,
+    blocking.pid AS blocking_id,
+    blocking.query AS blocking_query
+FROM pg_stat_activity AS activity
+JOIN pg_stat_activity AS blocking ON blocking.pid = ANY(pg_blocking_pids(activity.pid));
+
+Kill long-running PostgreSQL query processes
+Where some queries look like they’re not going to finish, you can use the pid (process ID) from the pg_stat_activity or pg_locks views to terminate the running process.
+
+pg_cancel_backend(pid) will attempt to gracefully kill a running query process.
+pg_terminate_backend(pid) will immediately kill the running query process, but
+
+
+olap=# select pid,locktype,database,mode,waitstart from pg_locks;
+  pid   |   locktype    | database |       mode       |           waitstart
+--------+---------------+----------+------------------+-------------------------------
+ 215382 | relation      |    16410 | RowExclusiveLock |
+ 215382 | virtualxid    |          | ExclusiveLock    |
+ 216461 | relation      |    16410 | AccessShareLock  |
+ 216461 | virtualxid    |          | ExclusiveLock    |
+ 215916 | relation      |    16410 | AccessShareLock  |
+ 215916 | relation      |    16410 | RowExclusiveLock |
+ 215916 | virtualxid    |          | ExclusiveLock    |
+ 215916 | transactionid |          | ShareLock        | 2022-07-16 11:50:49.964737+00
+ 215382 | transactionid |          | ExclusiveLock    |
+ 215916 | transactionid |          | ExclusiveLock    |
+ 215916 | tuple         |    16410 | ExclusiveLock    |
+(11 rows)
+
+
+#####################################################Install pgAdmin4##############################################################################
+
+[root@parweztestinstance ~]# yum install pgadmin4
+Last metadata expiration check: 1:56:43 ago on Sat 16 Jul 2022 09:05:59 AM GMT.
+No match for argument: pgadmin4
+Error: Unable to find a match: pgadmin4
+
+[postgres@parweztestinstance ~]$ exit
+logout
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]# sudo yum install https://ftp.postgresql.org/pub/pgadmin/pgadmin4/yum/pgadmin4-redhat-repo-2-1.noarch.rpm
+Last metadata expiration check: 2:00:39 ago on Sat 16 Jul 2022 09:05:59 AM GMT.
+pgadmin4-redhat-repo-2-1.noarch.rpm                                                                     14 kB/s | 6.6 kB     00:00
+Dependencies resolved.
+=======================================================================================================================================
+ Package                                  Architecture               Version                    Repository                        Size
+=======================================================================================================================================
+Installing:
+ pgadmin4-redhat-repo                     noarch                     2-1                        @commandline                     6.6 k
+
+Transaction Summary
+=======================================================================================================================================
+Install  1 Package
+
+Total size: 6.6 k
+Installed size: 4.0 k
+Is this ok [y/N]: y
+Downloading Packages:
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                                                                               1/1
+  Installing       : pgadmin4-redhat-repo-2-1.noarch                                                                               1/1
+  Verifying        : pgadmin4-redhat-repo-2-1.noarch                                                                               1/1
+
+Installed:
+  pgadmin4-redhat-repo-2-1.noarch
+
+Complete!
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]# cat /etc/yum.repos.d/pgadmin4.repo
+[pgAdmin4]
+name=pgadmin4
+baseurl=https://ftp.postgresql.org/pub/pgadmin/pgadmin4/yum/redhat/rhel-$releasever-$basearch
+enabled=1
+repo_gpgcheck=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/PGADMIN_PKG_KEY
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]# sudo yum install pgadmin4-web
+pgadmin4                                                                                               556  B/s | 833  B     00:01
+pgadmin4                                                                                               3.8 MB/s | 3.8 kB     00:00
+Importing GPG key 0x210976F2:
+ Userid     : "Package Manager (Package Signing Key) <packages@pgadmin.org>"
+ Fingerprint: E869 7E2E EF76 C02D 3A63 3277 8881 B2A8 2109 76F2
+ From       : /etc/pki/rpm-gpg/PGADMIN_PKG_KEY
+Is this ok [y/N]: y
+pgadmin4                                                                                               334 kB/s | 503 kB     00:01
+Last metadata expiration check: 0:00:01 ago on Sat 16 Jul 2022 11:08:30 AM GMT.
+Dependencies resolved.
+=======================================================================================================================================
+ Package                     Architecture    Version                                                  Repository                  Size
+=======================================================================================================================================
+Installing:
+ pgadmin4-web                noarch          6.11-1.el8                                               pgAdmin4                   8.7 k
+Installing dependencies:
+ apr                         x86_64          1.6.3-12.el8                                             ol8_appstream              129 k
+ apr-util                    x86_64          1.6.1-6.el8                                              ol8_appstream              105 k
+ httpd                       x86_64          2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2            ol8_appstream              1.4 M
+ httpd-filesystem            noarch          2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2            ol8_appstream               41 k
+ httpd-tools                 x86_64          2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2            ol8_appstream              108 k
+ mod_http2                   x86_64          1.15.7-5.module+el8.6.0+20548+01710940                   ol8_appstream              154 k
+ oracle-logos-httpd          noarch          84.5-1.0.1.el8                                           ol8_baseos_latest           29 k
+ pgadmin4-server             x86_64          6.11-1.el8                                               pgAdmin4                    99 M
+ python3-mod_wsgi            x86_64          4.6.4-4.el8                                              ol8_appstream              2.5 M
+Enabling module streams:
+ httpd                                       2.4
+
+Transaction Summary
+=======================================================================================================================================
+Install  10 Packages
+
+Total download size: 103 M
+Installed size: 308 M
+Is this ok [y/N]: y
+Downloading Packages:
+(1/10): apr-1.6.3-12.el8.x86_64.rpm                                                                    3.7 MB/s | 129 kB     00:00
+(2/10): oracle-logos-httpd-84.5-1.0.1.el8.noarch.rpm                                                   321 kB/s |  29 kB     00:00
+(3/10): httpd-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.x86_64.rpm                                  15 MB/s | 1.4 MB     00:00
+(4/10): httpd-filesystem-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.noarch.rpm                      1.0 MB/s |  41 kB     00:00
+(5/10): apr-util-1.6.1-6.el8.x86_64.rpm                                                                776 kB/s | 105 kB     00:00
+(6/10): httpd-tools-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.x86_64.rpm                           8.7 MB/s | 108 kB     00:00
+(7/10): mod_http2-1.15.7-5.module+el8.6.0+20548+01710940.x86_64.rpm                                     10 MB/s | 154 kB     00:00
+(8/10): pgadmin4-web-6.11-1.el8.noarch.rpm                                                              49 kB/s | 8.7 kB     00:00
+(9/10): python3-mod_wsgi-4.6.4-4.el8.x86_64.rpm                                                        8.9 MB/s | 2.5 MB     00:00
+(10/10): pgadmin4-server-6.11-1.el8.x86_64.rpm                                                          19 MB/s |  99 MB     00:05
+---------------------------------------------------------------------------------------------------------------------------------------
+Total                                                                                                   19 MB/s | 103 MB     00:05
+pgadmin4                                                                                               3.8 MB/s | 3.8 kB     00:00
+Importing GPG key 0x210976F2:
+ Userid     : "Package Manager (Package Signing Key) <packages@pgadmin.org>"
+ Fingerprint: E869 7E2E EF76 C02D 3A63 3277 8881 B2A8 2109 76F2
+ From       : /etc/pki/rpm-gpg/PGADMIN_PKG_KEY
+Is this ok [y/N]: y
+Key imported successfully
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                                                                               1/1
+  Installing       : apr-1.6.3-12.el8.x86_64                                                                                      1/10
+  Running scriptlet: apr-1.6.3-12.el8.x86_64                                                                                      1/10
+  Installing       : apr-util-1.6.1-6.el8.x86_64                                                                                  2/10
+  Running scriptlet: apr-util-1.6.1-6.el8.x86_64                                                                                  2/10
+  Installing       : httpd-tools-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.x86_64                                             3/10
+  Installing       : pgadmin4-server-6.11-1.el8.x86_64                                                                            4/10
+  Running scriptlet: httpd-filesystem-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.noarch                                        5/10
+  Installing       : httpd-filesystem-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.noarch                                        5/10
+  Installing       : oracle-logos-httpd-84.5-1.0.1.el8.noarch                                                                     6/10
+  Installing       : mod_http2-1.15.7-5.module+el8.6.0+20548+01710940.x86_64                                                      7/10
+  Installing       : httpd-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.x86_64                                                   8/10
+  Running scriptlet: httpd-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.x86_64                                                   8/10
+  Installing       : python3-mod_wsgi-4.6.4-4.el8.x86_64                                                                          9/10
+  Installing       : pgadmin4-web-6.11-1.el8.noarch                                                                              10/10
+  Running scriptlet: httpd-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.x86_64                                                  10/10
+  Running scriptlet: pgadmin4-web-6.11-1.el8.noarch                                                                              10/10
+  Verifying        : oracle-logos-httpd-84.5-1.0.1.el8.noarch                                                                     1/10
+  Verifying        : apr-1.6.3-12.el8.x86_64                                                                                      2/10
+  Verifying        : apr-util-1.6.1-6.el8.x86_64                                                                                  3/10
+  Verifying        : httpd-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.x86_64                                                   4/10
+  Verifying        : httpd-filesystem-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.noarch                                        5/10
+  Verifying        : httpd-tools-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.x86_64                                             6/10
+  Verifying        : mod_http2-1.15.7-5.module+el8.6.0+20548+01710940.x86_64                                                      7/10
+  Verifying        : python3-mod_wsgi-4.6.4-4.el8.x86_64                                                                          8/10
+  Verifying        : pgadmin4-server-6.11-1.el8.x86_64                                                                            9/10
+  Verifying        : pgadmin4-web-6.11-1.el8.noarch                                                                              10/10
+
+Installed:
+  apr-1.6.3-12.el8.x86_64
+  apr-util-1.6.1-6.el8.x86_64
+  httpd-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.x86_64
+  httpd-filesystem-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.noarch
+  httpd-tools-2.4.37-47.0.1.module+el8.6.0+20683+407db9f5.2.x86_64
+  mod_http2-1.15.7-5.module+el8.6.0+20548+01710940.x86_64
+  oracle-logos-httpd-84.5-1.0.1.el8.noarch
+  pgadmin4-server-6.11-1.el8.x86_64
+  pgadmin4-web-6.11-1.el8.noarch
+  python3-mod_wsgi-4.6.4-4.el8.x86_64
+
+Complete!
+
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]# /usr/pgadmin4/bin/setup-web.sh
+Setting up pgAdmin 4 in web mode on a Redhat based platform...
+Creating configuration database...
+NOTE: Configuring authentication for SERVER mode.
+
+Enter the email address and password to use for the initial pgAdmin user account:
+
+Email address: parwez.25j@gmail.com
+Password:
+Retype password:
+pgAdmin 4 - Application Initialisation
+======================================
+
+Creating storage and log directories...
+Configuring SELinux...
+The Apache web server is running and must be restarted for the pgAdmin 4 installation to complete. Continue (y/n)? y
+Apache successfully restarted. You can now start using pgAdmin 4 in web mode at http://127.0.0.1/pgadmin4 ( replace this ip with ur instance public ip http://132.145.160.120/pgadmin4/browser/)
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#  systemctl status httpd
+● httpd.service - The Apache HTTP Server
+   Loaded: loaded (/usr/lib/systemd/system/httpd.service; disabled; vendor preset: disabled)
+   Active: active (running) since Sat 2022-07-16 11:12:12 GMT; 5s ago
+     Docs: man:httpd.service(8)
+ Main PID: 208988 (httpd)
+   Status: "Started, listening on: port 80"
+    Tasks: 241 (limit: 3853)
+   Memory: 43.9M
+   CGroup: /system.slice/httpd.service
+           ├─208988 /usr/sbin/httpd -DFOREGROUND
+           ├─208989 /usr/sbin/httpd -DFOREGROUND
+           ├─208990 /usr/sbin/httpd -DFOREGROUND
+           ├─208991 /usr/sbin/httpd -DFOREGROUND
+           ├─208992 /usr/sbin/httpd -DFOREGROUND
+           └─208993 /usr/sbin/httpd -DFOREGROUND
+
+Jul 16 11:12:12 parweztestinstance systemd[1]: Starting The Apache HTTP Server...
+Jul 16 11:12:12 parweztestinstance httpd[208988]: [Sat Jul 16 11:12:12.667672 2022] [so:warn] [pid 208988:tid 139712225536320] AH01574>
+Jul 16 11:12:12 parweztestinstance httpd[208988]: AH00558: httpd: Could not reliably determine the server's fully qualified domain nam>
+Jul 16 11:12:12 parweztestinstance systemd[1]: Started The Apache HTTP Server.
+Jul 16 11:12:12 parweztestinstance httpd[208988]: Server configured, listening on: port 80
+
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]# cd /usr/pgadmin4/bin/
+[root@parweztestinstance bin]#
+[root@parweztestinstance bin]#
+[root@parweztestinstance bin]# ls -ltr
+total 8
+-rwxrwxr-x. 1 root root 4989 Jun 29 10:03 setup-web.sh
+[root@parweztestinstance bin]#
+[root@parweztestinstance bin]#
+[root@parweztestinstance bin]#
+[root@parweztestinstance bin]# firewall-cmd --add-port=80/tcp --permanent
+success
+[root@parweztestinstance bin]#
+[root@parweztestinstance bin]#
+[root@parweztestinstance bin]# firewall-cmd --reload
+success
+[root@parweztestinstance bin]#
+[root@parweztestinstance bin]#
+[root@parweztestinstance bin]# setsebool -P httpd_can_network_connect 1
+[root@parweztestinstance bin]#
+[root@parweztestinstance bin]#
+[root@parweztestinstance bin]# systemctl status httpd
+● httpd.service - The Apache HTTP Server
+   Loaded: loaded (/usr/lib/systemd/system/httpd.service; disabled; vendor preset: disabled)
+   Active: active (running) since Sat 2022-07-16 11:12:12 GMT; 1min 19s ago
+     Docs: man:httpd.service(8)
+ Main PID: 208988 (httpd)
+   Status: "Running, listening on: port 80"
+    Tasks: 241 (limit: 3853)
+   Memory: 43.9M
+   CGroup: /system.slice/httpd.service
+           ├─208988 /usr/sbin/httpd -DFOREGROUND
+           ├─208989 /usr/sbin/httpd -DFOREGROUND
+           ├─208990 /usr/sbin/httpd -DFOREGROUND
+           ├─208991 /usr/sbin/httpd -DFOREGROUND
+           ├─208992 /usr/sbin/httpd -DFOREGROUND
+           └─208993 /usr/sbin/httpd -DFOREGROUND
+
+Jul 16 11:12:12 parweztestinstance systemd[1]: Starting The Apache HTTP Server...
+Jul 16 11:12:12 parweztestinstance httpd[208988]: [Sat Jul 16 11:12:12.667672 2022] [so:warn] [pid 208988:tid 139712225536320] AH01574>
+Jul 16 11:12:12 parweztestinstance httpd[208988]: AH00558: httpd: Could not reliably determine the server's fully qualified domain nam>
+Jul 16 11:12:12 parweztestinstance systemd[1]: Started The Apache HTTP Server.
+Jul 16 11:12:12 parweztestinstance httpd[208988]: Server configured, listening on: port 80
+
+
+####################################################partion in postgres#################################################################################
+
+netbank=# CREATE TABLE IF NOT EXISTS netbnk_schm.transaction_part
+netbank-# (
+netbank(#     transaction_id integer NOT NULL,
+netbank(#     transaction_date date,
+netbank(#     card_type varchar(100),
+netbank(#     banks varchar(100)
+netbank(#
+netbank(#
+netbank(#
+netbank(# )partition by list(card_type);
+CREATE TABLE
+netbank=
+        ^
+netbank=#
+netbank=#
+netbank=# \db
+            List of tablespaces
+    Name    |  Owner   |      Location
+------------+----------+--------------------
+ new_tbs    | postgres | /var/oled/test_tbs
+ olap_tbs   | olap     | /var/oled/olap_tbs
+ pg_default | postgres |
+ pg_global  | postgres |
+(4 rows)
+
+netbank=# CREATE TABLE IF NOT EXISTS netbnk_schm.transaction_part2
+netbank-# (
+netbank(#     transaction_id integer NOT NULL,
+netbank(#     transaction_date date,
+netbank(#     card_type varchar(100),
+netbank(#     banks varchar(100)
+netbank(#
+netbank(#
+netbank(#
+netbank(# )partition by list(card_type)
+netbank-# TABLESPACE new_tbs;
+NOTICE:  relation "transaction_part2" already exists, skipping
+CREATE TABLE
+netbank=#
+netbank=#
+netbank=# CREATE TABLE IF NOT EXISTS netbnk_schm.transaction_part3
+netbank-# (
+netbank(#     transaction_id integer NOT NULL,
+netbank(#     transaction_date date,
+netbank(#     card_type varchar(100),
+netbank(#     banks varchar(100)
+netbank(#
+netbank(#
+netbank(#
+netbank(# )partition by list(card_type)
+netbank-# TABLESPACE new_tbs;
+ERROR:  cannot specify default tablespace for partitioned relations
+netbank=#
+netbank=#
+netbank=# set search_path=netbnk_schm;
+SET
+netbank=#
+netbank=#
+netbank=#
+netbank=# \dt
+                       List of relations
+   Schema    |       Name        |       Type        |  Owner
+-------------+-------------------+-------------------+----------
+ netbnk_schm | transaction       | table             | olap
+ netbnk_schm | transaction_part  | partitioned table | postgres
+ netbnk_schm | transaction_part2 | partitioned table | postgres
+(3 rows)
+
+netbank=#
+netbank=#
+netbank=# ALTER TABLE IF EXISTS netbnk_schm.transaction_par2
+netbank-#     OWNER to olap;
+NOTICE:  relation "transaction_par2" does not exist, skipping
+ALTER TABLE
+netbank=#
+netbank=#
+netbank=# \db
+            List of tablespaces
+    Name    |  Owner   |      Location
+------------+----------+--------------------
+ new_tbs    | postgres | /var/oled/test_tbs
+ olap_tbs   | olap     | /var/oled/olap_tbs
+ pg_default | postgres |
+ pg_global  | postgres |
+(4 rows)
+
+netbank=#
+netbank=#
+netbank=# \q
+[postgres@parweztestinstance ~]$
+[postgres@parweztestinstance ~]$
+[postgres@parweztestinstance ~]$ mkdir -p /var/oled/test_tbs2
+mkdir: cannot create directory ‘/var/oled/test_tbs2’: Permission denied
+[postgres@parweztestinstance ~]$
+[postgres@parweztestinstance ~]$
+[postgres@parweztestinstance ~]$ exit
+logout
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]# mkdir -p /var/oled/test_tbs2
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]# chown -R postgres:postgres /var/oled/test_tbs2
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]# su - postgres
+Last login: Sat Jul 16 15:25:45 GMT 2022 on pts/1
+[postgres@parweztestinstance ~]$
+[postgres@parweztestinstance ~]$
+[postgres@parweztestinstance ~]$ psql
+psql (14.4)
+Type "help" for help.
+
+postgres=# \c netbank
+You are now connected to database "netbank" as user "postgres".
+netbank=#
+netbank=#
+netbank=# \dn
+    List of schemas
+    Name     |  Owner
+-------------+----------
+ netbnk_schm | olap
+ public      | postgres
+(2 rows)
+
+netbank=# CREATE TABLESPACE new_tbs_2 owner olap LOCATION  '/var/oled/test_tbs2' ;
+CREATE TABLESPACE
+netbank=#
+netbank=#
+netbank=#
+netbank=#
+netbank=# \db
+             List of tablespaces
+    Name    |  Owner   |      Location
+------------+----------+---------------------
+ new_tbs    | postgres | /var/oled/test_tbs
+ new_tbs_2  | olap     | /var/oled/test_tbs2
+ olap_tbs   | olap     | /var/oled/olap_tbs
+ pg_default | postgres |
+ pg_global  | postgres |
+(5 rows)
+
+
+netbank=#
+netbank=# set search_path=netbnk_schm;
+SET
+netbank=# \dt
+                       List of relations
+   Schema    |       Name        |       Type        |  Owner
+-------------+-------------------+-------------------+----------
+ netbnk_schm | transaction       | table             | olap
+ netbnk_schm | transaction_part  | partitioned table | postgres
+ netbnk_schm | transaction_part2 | partitioned table | postgres
+(3 rows)
+
+
+netbank=# insert into netbnk_schm.transaction_part2 values(20,'1/20/2001','mada',       'sbi');
+ERROR:  no partition of relation "transaction_part2" found for row
+DETAIL:  Partition key of the failing row contains (card_type) = (mada).
+netbank=#
+netbank=#
+netbank=# create table netbnk_schm.transaction_par2_part2_1st partition of netbnk_schm.transaction_part2 for values IN('VISA') TABLESPACE new_tbs_2;
+CREATE TABLE
+netbank=#
+
+DETAIL:  Partition key of the failing row contains (card_type) = (visa).
+netbank=#
+netbank=#
+netbank=# insert into netbnk_schm.transaction_part2 values(2,'1/2/2001','VISA',       'hsbc');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(3,'1/3/2001','VISA',       'hsbc');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(4,'1/4/2001','VISA',       'sbi');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(5,'1/5/2001','VISA',       'al rajhi');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(6,'1/6/2001','VISA',       'bny');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(7,'1/7/2001','VISA',       'jp morgan');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(8,'1/8/2001','VISA',       'al jazeera');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(9,'1/9/2001','VISA',       'sabb');
+INSERT 0 1
+netbank=#
+netbank=#
+netbank=#
+netbank=# exit
+[postgres@parweztestinstance ~]$
+[postgres@parweztestinstance ~]$
+[postgres@parweztestinstance ~]$ exit
+logout
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]# mkdir -p /var/oled/test_tbs3
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]# chown -R postgres:postgres /var/oled/test_tbs3
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]# su - postgres
+Last login: Sat Jul 16 16:24:58 GMT 2022 on pts/1
+[postgres@parweztestinstance ~]$
+[postgres@parweztestinstance ~]$
+[postgres@parweztestinstance ~]$ psql
+psql (14.4)
+Type "help" for help.
+
+postgres=# \c netbank
+You are now connected to database "netbank" as user "postgres".
+netbank=#
+netbank=#
+netbank=# set search_path=netbnk_schm;
+SET
+netbank=#
+netbank=#
+netbank=# \db
+             List of tablespaces
+    Name    |  Owner   |      Location
+------------+----------+---------------------
+ new_tbs    | postgres | /var/oled/test_tbs
+ new_tbs_2  | olap     | /var/oled/test_tbs2
+ olap_tbs   | olap     | /var/oled/olap_tbs
+ pg_default | postgres |
+ pg_global  | postgres |
+(5 rows)
+
+netbank=#
+netbank=#
+netbank=# CREATE TABLESPACE new_tbs_3 owner olap location '/var/oled/test_tbs3' ;
+CREATE TABLESPACE
+netbank=#
+netbank=#
+netbank=#
+netbank=# create table netbnk_schm.transaction_par2_part2_1st partition of netbnk_schm.transaction_part2 for values IN('mastercard') TABLESPACE new_tbs_3;
+ERROR:  relation "transaction_par2_part2_1st" already exists
+netbank=#
+netbank=#
+netbank=#  create table netbnk_schm.transaction_part2 ^C
+netbank=#
+netbank=#
+netbank=# \dt
+                            List of relations
+   Schema    |            Name            |       Type        |  Owner
+-------------+----------------------------+-------------------+----------
+ netbnk_schm | transaction                | table             | olap
+ netbnk_schm | transaction_par2_part2_1st | table             | postgres
+ netbnk_schm | transaction_part           | partitioned table | postgres
+ netbnk_schm | transaction_part2          | partitioned table | postgres
+(4 rows)
+
+netbank=# create table netbnk_schm.transaction_par2_part2_2nd partition of netbnk_schm.transaction_part2 for values IN('mastercard') TABLESPACE new_tbs_3;
+CREATE TABLE
+netbank=#
+netbank=#
+netbank=#
+netbank=# insert into netbnk_schm.transaction_part2 values(12,'1/12/2001','mastercard',  'sbi');
+insert into netbnk_schm.transaction_part2 values(13,'1/13/2001',        'mastercard',  'al rajhi');
+insert into netbnk_schm.transaction_part2 values(14,'1/14/2001',        'mastercard',  'bny');
+insert into netbnk_schm.transaction_part2 values(15,'1/15/2001',        'mastercard',      'jp morgan');
+insert into netbnk_schm.transaction_part2 values(16,'1/16/2001',        'mastercard',      'al jazeera');
+insert into netbnk_schm.transaction_part2 values(17,'1/17/2001',        'mastercard',      'sabb');
+insert into netbnk_schm.transaction_part2 values(19,'1/18/2001',        'mastercard',          'hsbc');
+insert into netbnk_schm.transaction_part2 values(18,'1/19/2001',        'mastercard',          'hsbc');
+insert into netbnk_schm.transaction_part2 values(20,'1/20/2001',        'mastercard',          'sbi');INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(13,'1/13/2001','mastercard',  'al rajhi');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(14,'1/14/2001','mastercard',  'bny');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(15,'1/15/2001','mastercard',   'jp morgan');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(16,'1/16/2001','mastercard',   'al jazeera');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(17,'1/17/2001','mastercard',   'sabb');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(19,'1/18/2001','mastercard',       'hsbc');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(18,'1/19/2001','mastercard',       'hsbc');
+INSERT 0 1
+netbank=# insert into netbnk_schm.transaction_part2 values(20,'1/20/2001','mastercard',       'sbi');
+INSERT 0 1
+netbank=#
+netbank=#
+netbank=#
+netbank=#
+netbank=#
+netbank=# \dt
+                            List of relations
+   Schema    |            Name            |       Type        |  Owner
+-------------+----------------------------+-------------------+----------
+ netbnk_schm | transaction                | table             | olap
+ netbnk_schm | transaction_par2_part2_1st | table             | postgres
+ netbnk_schm | transaction_par2_part2_2nd | table             | postgres
+ netbnk_schm | transaction_part           | partitioned table | postgres
+ netbnk_schm | transaction_part2          | partitioned table | postgres
+(5 rows)
+
+netbank=#
+netbank=#
+netbank=#
+netbank=# \d pg_tables;
+              View "pg_catalog.pg_tables"
+   Column    |  Type   | Collation | Nullable | Default
+-------------+---------+-----------+----------+---------
+ schemaname  | name    |           |          |
+ tablename   | name    |           |          |
+ tableowner  | name    |           |          |
+ tablespace  | name    |           |          |
+ hasindexes  | boolean |           |          |
+ hasrules    | boolean |           |          |
+ hastriggers | boolean |           |          |
+ rowsecurity | boolean |           |          |
+
+netbank=#
+netbank=# select tablename,tablespace from pg_tables where schemaname='netbnk_schm' ;
+         tablename          | tablespace
+----------------------------+------------
+ transaction                |
+ transaction_part           |
+ transaction_part2          |
+ transaction_par2_part2_1st | new_tbs_2
+ transaction_par2_part2_2nd | new_tbs_3
+(5 rows)
+
+netbank=# select * from transaction_par2_part2_1st ;
+ transaction_id | transaction_date | card_type |   banks
+----------------+------------------+-----------+------------
+             11 | 2001-01-11       | VISA      | hsbc
+              2 | 2001-01-02       | VISA      | hsbc
+              2 | 2001-01-02       | VISA      | hsbc
+              3 | 2001-01-03       | VISA      | hsbc
+              4 | 2001-01-04       | VISA      | sbi
+              5 | 2001-01-05       | VISA      | al rajhi
+              6 | 2001-01-06       | VISA      | bny
+              7 | 2001-01-07       | VISA      | jp morgan
+              8 | 2001-01-08       | VISA      | al jazeera
+              9 | 2001-01-09       | VISA      | sabb
+(10 rows)
+
+netbank=# select * from transaction_par2_part2_2nd ;
+ transaction_id | transaction_date | card_type  |   banks
+----------------+------------------+------------+------------
+             12 | 2001-01-12       | mastercard | sbi
+             13 | 2001-01-13       | mastercard | al rajhi
+             14 | 2001-01-14       | mastercard | bny
+             15 | 2001-01-15       | mastercard | jp morgan
+             16 | 2001-01-16       | mastercard | al jazeera
+             17 | 2001-01-17       | mastercard | sabb
+             19 | 2001-01-18       | mastercard | hsbc
+             18 | 2001-01-19       | mastercard | hsbc
+             20 | 2001-01-20       | mastercard | sbi
+(9 rows)
+
+
+
+####################pip##################
+
+
+[root@parweztestinstance ~]# python -m pip install --upgrade pip
+WARNING: Running pip install with root privileges is generally not a good idea. Try `__main__.py install --user` instead.
+Collecting pip
+  Downloading https://files.pythonhosted.org/packages/a4/6d/6463d49a933f547439d6b5b98b46af8742cc03ae83543e4d7688c2420f8b/pip-21.3.1-py3-none-any.whl (1.7MB)
+    100% |████████████████████████████████| 1.7MB 314kB/s
+
+
+    100% |████████████████████████████████| 1.7MB 314kB/s
+Installing collected packages: pip
+
+[root@parweztestinstance ~]# which pip
+/usr/local/bin/pip
+
+
+################# for shared libary pg_stat_statements we need to install contrib################
+
+add in conf file 
+
+shared_preload_libraries='pg_stat_statements'
+compute_query_id = on
+pg_stat_statements.max = 10000
+pg_stat_statements.track = all
+
+
+[postgres@parweztestinstance bin]$ ./pg_ctl -D /var/lib/pgsql/14/data start
+waiting for server to start....2022-07-20 21:21:03.151 GMT [1585922] FATAL:  could not access file "pg_stat_statements": No such file or directory
+2022-07-20 21:21:03.151 GMT [1585922] LOG:  database system is shut down
+ stopped waiting
+pg_ctl: could not start server
+Examine the log output.
+
+[root@parweztestinstance ~]# yum install postgresql14 postgresql14-contrib
+Last metadata expiration check: 2:42:40 ago on Wed 20 Jul 2022 06:42:50 PM GMT.
+Package postgresql14-14.4-1PGDG.rhel8.x86_64 is already installed.
+Dependencies resolved.
+=======================================================================================================================================
+ Package                                 Architecture              Version                             Repository                 Size
+=======================================================================================================================================
+Installing:
+ postgresql14-contrib                    x86_64                    14.4-1PGDG.rhel8      
+ 
+ 
+ [postgres@parweztestinstance bin]$ ./pg_ctl -D /var/lib/pgsql/14/data start
+waiting for server to start....2022-07-20 21:26:06.207 GMT [1587059] LOG:  redirecting log output to logging collector process
+2022-07-20 21:26:06.207 GMT [1587059] HINT:  Future log output will appear in directory "log".
+ done
+server started
+
+
+[postgres@parweztestinstance data]$ psql
+psql (14.4)
+Type "help" for help.
+
+postgres=# SELECT * FROM pg_available_extensions WHERE name = 'pg_stat_statements' ;
+        name        | default_version | installed_version |                                comment
+--------------------+-----------------+-------------------+------------------------------------------------------------------------
+ pg_stat_statements | 1.9             |                   | track planning and execution statistics of all SQL statements executed
+(1 row)
+
+postgres=# create extension pg_stat_statements;   ( do this for each individual database s)
+CREATE EXTENSION
+
+
+postgres=# \d pg_stat_statements;
+                    View "public.pg_stat_statements"
+       Column        |       Type       | Collation | Nullable | Default
+---------------------+------------------+-----------+----------+---------
+ userid              | oid              |           |          |
+ dbid                | oid              |           |          |
+ toplevel            | boolean          |           |          |
+ queryid             | bigint           |           |          |
+ query               | text             |           |          |
+ plans               | bigint           |           |          |
+ total_plan_time     | double precision |           |          |
+ min_plan_time       | double precision |           |          |
+ max_plan_time       | double precision |           |          |
+ mean_plan_time      | double precision |           |          |
+ stddev_plan_time    | double precision |           |          |
+ calls               | bigint           |           |          |
+ total_exec_time     | double precision |           |          |
+ min_exec_time       | double precision |           |          |
+ max_exec_time       | double precision |           |          |
+ mean_exec_time      | double precision |           |          |
+ stddev_exec_time    | double precision |           |          |
+ rows                | bigint           |           |          |
+
+
+netbank=# SELECT query, calls, total_exec_time, rows, 100.0 * shared_blks_hit /
+netbank-#                nullif(shared_blks_hit + shared_blks_read, 0) AS hit_percent
+netbank-#           FROM pg_stat_statements ORDER BY total_exec_time DESC LIMIT 5;
+
+
+-[ RECORD 1 ]---+------------------------------------------------------
+query           | create extension pg_stat_statements
+calls           | 1
+total_exec_time | 78.62492
+rows            | 0
+hit_percent     | 95.9279279279279279
+-[ RECORD 2 ]---+------------------------------------------------------
+query           | create extension pg_stat_statements
+calls           | 1
+total_exec_time | 77.833374
+rows            | 0
+hit_percent     | 96.0970464135021097
+-[ RECORD 3 ]---+------------------------------------------------------
+query           | SELECT * FROM pg_available_extensions WHERE name = $1
+calls           | 1
+total_exec_time | 31.780718999999998
+rows            | 1
+hit_percent     | 0.00000000000000000000
+-[ RECORD 4 ]---+------------------------------------------------------
+query           | -- Register a view on the function for ease of use.  +
+                | CREATE VIEW pg_stat_statements AS                    +
+                |   SELECT * FROM pg_stat_statements(true)
+calls           | 1
+total_exec_time | 21.01137
+rows            | 0
+hit_percent     | 89.5522388059701493
+-[ RECORD 5 ]---+------------------------------------------------------
+query           | -- Register a view on the function for ease of use.  +
+                | CREATE VIEW pg_stat_statements AS                    +
+                |   SELECT * FROM pg_stat_statements(true)
+calls           | 1
+total_exec_time | 19.730059
+rows            | 0
+hit_percent     | 89.7506925207756233
+
+
+#####################perfromance magic query #############################
+
+select substring(query,1, 50) AS short_query,
+       round(total_exec_time::numeric, 2) AS total_exec_time,
+	   calls,round(min_exec_time::numeric,2) AS mean,
+	   round((100*total_exec_time/ sum(total_exec_time::numeric)
+	   OVER())::numeric,2) AS percentage_overall
+	   
+from pg_stat_statements
+order by total_exec_time desc
+LIMIT 20;
+
+                    short_query                     | total_exec_time | calls | mean  | percentage_overall
+----------------------------------------------------+-----------------+-------+-------+--------------------
+ create extension pg_stat_statements                |           78.62 |     1 | 78.62 |              25.59
+ create extension pg_stat_statements                |           77.83 |     1 | 77.83 |              25.34
+ SELECT * FROM pg_available_extensions WHERE name = |           31.78 |     1 | 31.78 |              10.35
+ -- Register a view on the function for ease of use |           21.01 |     1 | 21.01 |               6.84
+ -- Register a view on the function for ease of use |           19.73 |     1 | 19.73 |               6.42
+ /* contrib/pg_stat_statements/pg_stat_statements-- |           12.77 |     1 | 12.77 |               4.16
+ /* contrib/pg_stat_statements/pg_stat_statements-- |           10.16 |     1 | 10.16 |               3.31
+ CREATE VIEW pg_stat_statements AS                 +|            7.60 |     2 |  1.26 |               2.48
+   SELECT * FROM                                    |                 |       |       |
+ CREATE VIEW pg_stat_statements AS                 +|            7.47 |     2 |  1.37 |               2.43
+   SELECT * FROM                                    |                 |       |       |
+ GRANT SELECT ON pg_stat_statements TO PUBLIC       |            4.33 |     3 |  0.14 |               1.41
+ GRANT SELECT ON pg_stat_statements TO PUBLIC       |            4.25 |     3 |  0.14 |               1.38
+ /* Now redefine */                                +|            2.96 |     1 |  2.96 |               0.96
+ CREATE FUNCTION pg_stat_stateme                    |                 |       |       |
+ /* Then we can drop them */                       +|            2.12 |     2 |  0.35 |               0.69
+ DROP VIEW pg_stat_stat                             |                 |       |       |
+ /* Then we can drop them */                       +|            2.06 |     2 |  0.24 |               0.67
+ DROP VIEW pg_stat_stat                             |                 |       |       |
+ /* Then we can drop them */                       +|            1.89 |     1 |  1.89 |               0.62
+
+
+##################for index related quries having sequential scan ( most query
+
+
+select schemaname,relname,seq_scan,seq_tup_read,idx_scan,seq_tup_read/seq_scan AS average from pg_stat_user_tables
+where seq_scan>0 order by seq_tup_read desc ;
+
+
+*average ( average size if seqential scan)
+
+netbank=# select schemaname,relname,seq_scan,seq_tup_read,idx_scan,seq_tup_read/seq_scan AS average from pg_stat_user_tables
+netbank-# where seq_scan>0 order by seq_tup_read desc ;
+ schemaname  |          relname           | seq_scan | seq_tup_read | idx_scan | average
+-------------+----------------------------+----------+--------------+----------+---------
+ netbnk_schm | transaction_par2_part2_1st |       20 |          200 |          |      10
+ netbnk_schm | transaction                |       12 |          190 |        3 |      15
+ netbnk_schm | transaction_par2_part2_2nd |       19 |          171 |          |       9
+(3 rows)
+
+
+IMP : everything thats shows up in the top is a candidate for missing index
+
+
+
+block range index(idx_brin) is vay smaller liek 2000 times smalled that btree index and very helpful if wr have sorted 
+partioned table for very huge database queries like billions rows
+
+
+netbank=# create index idx_brin on netbnk_schm.transaction_part2 using brin(card_type) ;
+CREATE INDEX
+netbank=#
+netbank=#
+netbank=#  \di+
+                                                                            List of relations
+   Schema    |                   Name                   |       Type        |  Owner   |           Table            | Persistence | Acc
+ess method |  Size   | Description
+-------------+------------------------------------------+-------------------+----------+----------------------------+-------------+---- -----------+---------+-------------
+ netbnk_schm | idx_brin                                 | partitioned index | olap     | transaction_part2          | permanent   | brin          | 0 bytes |
+ netbnk_schm | transaction_par2_part2_1st_card_type_idx | index             | postgres | transaction_par2_part2_1st | permanent   | brin          | 48 kB   |
+ netbnk_schm | transaction_par2_part2_2nd_card_type_idx | index             | postgres | transaction_par2_part2_2nd | permanent   | brin          | 48 kB   |
+ netbnk_schm | transaction_pkey                         | index             | olap     | transaction                | permanent   | btr
+ee         | 16 kB   |
+(4 rows)
+
+netbank=# \d netbnk_schm.transaction_part2
+             Partitioned table "netbnk_schm.transaction_part2"
+      Column      |          Type          | Collation | Nullable | Default
+------------------+------------------------+-----------+----------+---------
+ transaction_id   | integer                |           | not null |
+ transaction_date | date                   |           |          |
+ card_type        | character varying(100) |           |          |
+ banks            | character varying(100) |           |          |
+Partition key: LIST (card_type)
+Indexes:
+    "idx_brin" brin (card_type)
+Number of partitions: 2 (Use \d+ to list them.)
+
+
+
+CREATE TABLE measurement_y2007m12 PARTITION OF measurement
+    FOR VALUES FROM ('2007-12-01') TO ('2008-01-01')
+    TABLESPACE olap_tbs;
+	
+	
