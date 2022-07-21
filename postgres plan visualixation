@@ -1,0 +1,40 @@
+http://tatiyants.com/pev/
+
+put in pan section
+
+[                                                         
+  {                                                       
+    "Plan": {                                             
+      "Node Type": "Bitmap Heap Scan",                    
+      "Parallel Aware": false,                            
+      "Async Capable": false,                             
+      "Relation Name": "measurement_y2006m02",            
+      "Alias": "measurement",                             
+      "Startup Cost": 4.22,                               
+      "Total Cost": 14.76,                                
+      "Plan Rows": 9,                                     
+      "Plan Width": 4,                                    
+      "Recheck Cond": "(logdate = '2006-02-18'::date)",   
+      "Plans": [                                          
+        {                                                 
+          "Node Type": "Bitmap Index Scan",               
+          "Parent Relationship": "Outer",                 
+          "Parallel Aware": false,                        
+          "Async Capable": false,                         
+          "Index Name": "measurement_y2006m02_logdate_idx",
+          "Startup Cost": 0.00,                           
+          "Total Cost": 4.22,                             
+          "Plan Rows": 9,                                 
+          "Plan Width": 0,                                
+          "Index Cond": "(logdate = '2006-02-18'::date)"  
+        }                                                 
+      ]                                                   
+    }                                                     
+  }                                                        
+]
+
+
+
+put in query section
+
+select peaktemp from measurement where logdate='2006-02-18'
