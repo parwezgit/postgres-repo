@@ -1,5 +1,8 @@
 http://tatiyants.com/pev/
 
+
+explain (format json) select peaktemp from measurement where logdate='2006-02-18' ;
+
 put in pan section
 
 [                                                         
