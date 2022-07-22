@@ -1311,3 +1311,42 @@ CREATE TABLE measurement_y2007m12 PARTITION OF measurement
     TABLESPACE olap_tbs;
 	
 	
+################################33create table and insert 1M records##########################
+
+test=# CREATE TABLE sampletable (x numeric);
+CREATE TABLE
+
+test=# INSERT INTO sampletable
+         SELECT random() * 10000
+         FROM generate_series(1, 10000000);
+INSERT 0 10000000
+
+test=# CREATE INDEX idx_x ON sampletable(x);
+CREATE INDEX
+
+
+############################check how many records from disk is loaded into the shared buffer#######################
+
+
+Aggregate  (cost=17407.33..17407.34 rows=1 width=8) (actual time=33.760..33.761 rows=1 loops=1)
+
+   ->  Bitmap Heap Scan on tbldummy  (cost=189.52..17382.46 rows=9948 width=0) (actual time=9.584..30.576 rows=10000 loops=1)
+
+         Recheck Cond: (c_id = 1)
+
+         Heap Blocks: exact=10000
+
+         ->  Bitmap Index Scan on tbldummy_c_id_idx  (cost=0.00..187.04 rows=9948 width=0) (actual time=4.314..4.314 rows=10000 loops=1)
+
+               Index Cond: (c_id = 1)
+
+SELECT heap_blks_read, heap_blks_hit from pg_statio_user_tables where relname='tbldummy';
+
+heap_blks_read | heap_blks_hit
+
+---------------+---------------
+
+    0          |         10000
+
+
+
