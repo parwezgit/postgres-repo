@@ -1,0 +1,85 @@
+my table has 5M rows and around 403 mb
+
+new_tbs_olap=# select schemaname as table_schema,
+new_tbs_olap-#     relname as table_name,
+new_tbs_olap-#     pg_size_pretty(pg_total_relation_size(relid)) as total_size,
+new_tbs_olap-#     pg_size_pretty(pg_relation_size(relid)) as data_size,
+new_tbs_olap-#     pg_size_pretty(pg_total_relation_size(relid) - pg_relation_size(relid))
+new_tbs_olap-#       as external_size
+new_tbs_olap-# from pg_catalog.pg_statio_user_tables
+new_tbs_olap-# order by pg_total_relation_size(relid) desc,
+new_tbs_olap-#          pg_relation_size(relid) desc
+new_tbs_olap-# limit 10;
+ table_schema | table_name | total_size | data_size  | external_size
+--------------+------------+------------+------------+---------------
+ new_tbs_olap | t_person   | 403 MB     | 403 MB     | 136 kB
+ new_tbs_olap | t_gender   | 16 kB      | 8192 bytes | 8192 bytes
+ new_tbs_olap | films      | 8192 bytes | 0 bytes    | 8192 bytes
+(3 rows)
+
+new_tbs_olap=# select count(*) from new_tbs_olap.t_person ;
+  count
+---------
+ 5000000
+(1 row)
+
+
+new_tbs_olap=# \dt t_person
+             List of relations
+    Schema    |   Name   | Type  |  Owner
+--------------+----------+-------+----------
+ new_tbs_olap | t_person | table | postgres
+(1 row)
+
+
+delete 2.5 M records
+
+new_tbs_olap=# delete from new_tbs_olap.t_person where id > 2500000 ;
+DELETE 2500000
+
+new_tbs_olap=# select now() ;
+              now
+-------------------------------
+ 2022-07-23 12:55:02.297151+00
+(1 row)
+
+
+
+from other session see autovaccum kicks in on out table ( see the timing)
+
+postgres 2415902 2190934  5 12:55 ?        00:00:00 postgres: autovacuum worker new_tbs_olap
+
+Check the size after autovaccum finishes
+
+ table_schema | table_name | total_size | data_size  | external_size
+--------------+------------+------------+------------+---------------
+ new_tbs_olap | t_person   | 201 MB     | 201 MB     | 80 kB
+ new_tbs_olap | t_gender   | 16 kB      | 8192 bytes | 8192 bytes
+ new_tbs_olap | films      | 8192 bytes | 0 bytes    | 8192 bytes
+(3 rows)
+
+
+see the filesystem storage is also reclaimed from 403 mb to 202 mb
+
+[postgres@parweztestinstance 16419]$ ls -ltr 16505*
+-rw-------. 1 postgres postgres 211140608 Jul 23 12:55 16505
+-rw-------. 1 postgres postgres     73728 Jul 23 12:57 16505_fsm
+-rw-------. 1 postgres postgres      8192 Jul 23 12:57 16505_vm
+[postgres@parweztestinstance 16419]$ du -sh 16505
+202M    16505
+
+
+check again its the same tables
+
+select
+     n.nspname AS tableschema,
+    c.relname AS tablename
+    from pg_class c
+    inner join pg_namespace n on (c.relnamespace = n.oid)
+     where c.relfilenode = 16505;
+     
+ tableschema  | tablename
+--------------+-----------
+ new_tbs_olap | t_person
+(1 row)
+
