@@ -13,3 +13,23 @@ new_tbs_olap=# SELECT pg_relation_filepath('t_person');
 -rw-------. 1 postgres postgres      8192 Jul 23 12:57 16505_vm
 [postgres@parweztestinstance 16419]$ du -sh 16505
 202M    16505
+
+
+reverese mappting
+select 
+    n.nspname AS tableschema, 
+    c.relname AS tablename
+from pg_class c
+inner join pg_namespace n on (c.relnamespace = n.oid)
+where c.relfilenode = 16505;
+
+new_tbs_olap=# select
+new_tbs_olap-#     n.nspname AS tableschema,
+new_tbs_olap-#     c.relname AS tablename
+new_tbs_olap-# from pg_class c
+new_tbs_olap-# inner join pg_namespace n on (c.relnamespace = n.oid)
+new_tbs_olap-# where c.relfilenode = 16505;
+ tableschema  | tablename
+--------------+-----------
+ new_tbs_olap | t_person
+(1 row)
