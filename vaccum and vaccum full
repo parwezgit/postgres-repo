@@ -1,0 +1,34 @@
+new_tbs_olap=# VACUUM VERBOSE t_person;
+INFO:  vacuuming "new_tbs_olap.t_person"
+INFO:  table "t_person": found 0 removable, 19 nonremovable row versions in 1 out of 25774 pages
+DETAIL:  0 dead row versions cannot be removed yet, oldest xmin: 859
+Skipped 0 pages due to buffer pins, 0 frozen pages.
+CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s.
+VACUUM
+
+
+new_tbs_olap=# VACUUM FULL VERBOSE t_person;
+INFO:  vacuuming "new_tbs_olap.t_person"
+INFO:  "t_person": found 0 removable, 2500000 nonremovable row versions in 25774 pages
+DETAIL:  0 dead row versions cannot be removed yet.
+CPU: user: 0.92 s, system: 0.40 s, elapsed: 14.88 s.
+VACUUM
+
+
+new_tbs_olap=# VACUUM FULL t_person;
+VACUUM
+
+
+parameters
+
+FULL
+Selects “full” vacuum, which can reclaim more space, but takes much longer and exclusively locks the table. This method also requires extra disk space, since it writes a new copy of the table and doesn't release the old copy until the operation is complete. Usually this should only be used when a significant amount of space needs to be reclaimed from within the table.
+
+FREEZE
+Selects aggressive “freezing” of tuples. Specifying FREEZE is equivalent to performing VACUUM with the vacuum_freeze_min_age and vacuum_freeze_table_age parameters set to zero. Aggressive freezing is always performed when the table is rewritten, so this option is redundant when FULL is specified.
+
+VERBOSE
+Prints a detailed vacuum activity report for each table.
+
+ANALYZE
+Updates statistics used by the planner to determine the most efficient way to execute a query.
