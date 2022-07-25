@@ -1,0 +1,153 @@
+        pgbadger /var/log/postgresql.log
+        pgbadger /var/log/postgres.log.2.gz /var/log/postgres.log.1.gz 
+                       /var/log/postgres.log
+        pgbadger /var/log/postgresql/postgresql-2012-05-*
+        pgbadger --exclude-query="^(COPY|COMMIT)" /var/log/postgresql.log
+        pgbadger -b "2012-06-25 10:56:11" -e "2012-06-25 10:59:11" 
+                       /var/log/postgresql.log
+        cat /var/log/postgres.log | pgbadger -
+        # Log prefix with stderr log output
+        perl pgbadger --prefix '%t [%p]: [%l-1] user=%u,db=%d,client=%h' 
+                        /pglog/postgresql-2012-08-21*
+        perl pgbadger --prefix '%m %u@%d %p %r %a : ' /pglog/postgresql.log
+        # Log line prefix with syslog log output
+        perl pgbadger --prefix 'user=%u,db=%d,client=%h,appname=%a' 
+                        /pglog/postgresql-2012-08-21*
+        # Use my 8 CPUs to parse my 10GB file faster, much faster
+        perl pgbadger -j 8 /pglog/postgresql-9.1-main.log
+        
+        
+        
+        time stamps between reports 
+        
+ [postgres@parweztestinstance ~]$ pgbadger -b "2022-07-25 19:47:50" -e "2022-07-25 20:08:55" /var/lib/pgsql/14/data/log/postgresql-Mon.log
+[======================>  ] Parsed 1370917 bytes of 1447189 (94.73%), queries: 35, events: 81
+LOG: Ok, generating html report...
+-rw-r--r--. 1 postgres postgres 1244167 Jul 25 20:24 out.html
+
+
+Installl
+
+[root@parweztestinstance ~]# yum install -y perl perl-devel
+Last metadata expiration check: 0:50:21 ago on Mon 25 Jul 2022 06:47:40 PM GMT.
+Dependencies resolved.
+=======================================================================================================================================
+ Package                                   Architecture        Version                            Repository                      Size
+=======================================================================================================================================
+Installing:
+ perl                                      x86_64              4:5.26.3-421.el8                   ol8_appstream                   73 k
+  qt5-srpm-macros-5.15.2-1.el8.noarch                              redhat-rpm-config-129-1.0.1.el8.noarch
+  rust-srpm-macros-5-2.el8.noarch
+
+Complete!
+
+
+
+[root@parweztestinstance ~]# wget https://github.com/darold/pgbadger/archive/v11.4.tar.gz
+--2022-07-25 19:39:20--  https://github.com/darold/pgbadger/archive/v11.4.tar.gz
+Resolving github.com (github.com)... 140.82.113.4
+Connecting to github.com (github.com)|140.82.113.4|:443... connected.
+2022-07-25 19:39:21 (10.5 MB/s) - ‘v11.4.tar.gz’ saved [2299574]
+
+[root@parweztestinstance ~]# ls -ltr
+-rw-r--r--. 1 root root 2299574 Jul 25 19:39 v11.4.tar.gz
+
+[root@parweztestinstance ~]# tar xzvf v11.4.tar.gz
+pgbadger-11.4/
+pgbadger-11.4/.editorconfig
+pgbadger-11.4/.gitignore
+pgbadger-11.4/CONTRIBUTING.md
+pgbadger-11.4/ChangeLog
+pgbadger-11.4/HACKING.md
+
+
+[root@parweztestinstance ~]# ls -ltr
+total 2260
+drwxrwxr-x. 6 root root     266 Nov 24  2020 pgbadger-11.4
+
+
+[root@parweztestinstance ~]# cd pgbadger-11.4
+[root@parweztestinstance pgbadger-11.4]#
+[root@parweztestinstance pgbadger-11.4]# ls -ltr
+total 1732
+drwxrwxr-x. 2 root root     117 Nov 24  2020 tools
+drwxrwxr-x. 4 root root      93 Nov 24  2020 t
+drwxrwxr-x. 3 root root    4096 Nov 24  2020 resources
+-rw-rw-r--. 1 root root   36780 Nov 24  2020 README.md
+-rw-rw-r--. 1 root root   38540 Nov 24  2020 README
+-rwxrwxr-x. 1 root root 1533974 Nov 24  2020 pgbadger
+-rw-rw-r--. 1 root root     250 Nov 24  2020 META.yml
+-rw-rw-r--. 1 root root      81 Nov 24  2020 MANIFEST
+-rw-rw-r--. 1 root root    2171 Nov 24  2020 Makefile.PL
+-rw-rw-r--. 1 root root     910 Nov 24  2020 LICENSE
+-rw-rw-r--. 1 root root    1487 Nov 24  2020 HACKING.md
+drwxrwxr-x. 2 root root      26 Nov 24  2020 doc
+-rw-rw-r--. 1 root root     878 Nov 24  2020 CONTRIBUTING.md
+-rw-rw-r--. 1 root root  129546 Nov 24  2020 ChangeLog
+[root@parweztestinstance pgbadger-11.4]#
+
+
+
+
+
+[root@parweztestinstance pgbadger-11.4]# perl Makefile.PL
+Checking if your kit is complete...
+Looks good
+Generating a Unix-style Makefile
+Writing Makefile for pgBadger
+Writing MYMETA.yml and MYMETA.json
+[root@parweztestinstance pgbadger-11.4]#
+
+
+
+[root@parweztestinstance pgbadger-11.4]# make && sudo make install
+which: no pod2markdown in (/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin)
+cp pgbadger blib/script/pgbadger
+"/usr/bin/perl" -MExtUtils::MY -e 'MY->fixin(shift)' -- blib/script/pgbadger
+echo "=head1 SYNOPSIS" > doc/synopsis.pod
+./pgbadger --help >> doc/synopsis.pod
+echo "=head1 DESCRIPTION" >> doc/synopsis.pod
+Installing /usr/local/share/man/man1/pgbadger.1p
+Installing /usr/local/bin/pgbadger
+Appending installation info to /usr/lib64/perl5/perllocal.pod
+rm doc/synopsis.pod
+
+
+
+[root@parweztestinstance pgbadger-11.4]# pgbadger -V
+pgBadger version 11.4
+
+drwxrwxr-x. 7 root root    4096 Jul 25 19:40 pgbadger-11.4
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]#
+[root@parweztestinstance ~]# chown -R postgres:postgres pgbadger-11.4
+
+
+set this parameters in postgresq.conf
+
+    log_line_prefix = '%t [%p]: db=%d,user=%u,app=%a,client=%h '
+    log_checkpoints = on
+    log_connections = on
+    log_disconnections = on
+    log_lock_waits = on
+    log_temp_files = 0
+    log_autovacuum_min_duration = 0
+    log_error_verbosity = default
+    lc_messages='en_US.UTF-8'
+    lc_messages='C'
+    
+log_min_duration_statement = 0
+log_line_prefix = '%t [%p]: user=%u,db=%d,app=%a,client=%h '
+log_checkpoints = on
+log_connections = on
+log_disconnections = on
+log_lock_waits = on
+log_temp_files = 0
+log_autovacuum_min_duration = 0
+log_error_verbosity = default
+lc_messages='en_US.UTF-8'
+lc_messages='C'
+
+
+
+
